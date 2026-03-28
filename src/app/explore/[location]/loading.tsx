@@ -9,6 +9,9 @@ export default function Loading() {
             <div className="h-8 w-64 rounded-lg bg-white/30" />
             <div className="h-5 w-48 rounded-full bg-white/20" />
           </div>
+          <p className="mt-4 text-amber-100 text-sm animate-pulse">
+            🔍 Looking up restaurants, parks, shops, and jobs nearby...
+          </p>
         </div>
       </div>
 
