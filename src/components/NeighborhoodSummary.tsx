@@ -8,6 +8,7 @@ interface NeighborhoodSummaryProps {
   shopping: Place[];
   attractions: Place[];
   parks: Place[];
+  schools: Place[];
   employers: EmployerData | null;
 }
 
@@ -18,22 +19,23 @@ function getVerdict(score: number): { emoji: string; headline: string; color: st
   return { emoji: '🌾', headline: 'Rural or developing area — fewer amenities nearby.', color: 'text-gray-800', bg: 'bg-gray-50', border: 'border-gray-300' };
 }
 
-function computeOverall(dining: number, shopping: number, attractions: number, parks: number): number {
-  const score = (count: number) => Math.min(Math.round((Math.log(count + 1) / Math.log(21)) * 100), 100);
-  return Math.round((score(dining) + score(shopping) + score(attractions) + score(parks)) / 4);
+function computeOverall(dining: number, shopping: number, attractions: number, parks: number, schools: number): number {
+  const s = (count: number, max: number) => Math.min(Math.round((Math.log(count + 1) / Math.log(max + 1)) * 100), 100);
+  return Math.round((s(dining, 20) + s(shopping, 20) + s(attractions, 20) + s(parks, 20) + s(schools, 10)) / 5);
 }
 
 export default function NeighborhoodSummary({
-  city, state, dining, shopping, attractions, parks, employers,
+  city, state, dining, shopping, attractions, parks, schools, employers,
 }: NeighborhoodSummaryProps) {
-  const overall = computeOverall(dining.length, shopping.length, attractions.length, parks.length);
+  const overall = computeOverall(dining.length, shopping.length, attractions.length, parks.length, schools.length);
   const verdict = getVerdict(overall);
   const locationName = [city, state].filter(Boolean).join(', ');
 
   const highlights: string[] = [];
   if (dining.length > 0) highlights.push(`${dining.length} place${dining.length !== 1 ? 's' : ''} to eat`);
   if (shopping.length > 0) highlights.push(`${shopping.length} shop${shopping.length !== 1 ? 's' : ''}`);
-  if (parks.length > 0) highlights.push(`${parks.length} park${parks.length !== 1 ? 's' : ''} & green space${parks.length !== 1 ? 's' : ''}`);
+  if (parks.length > 0) highlights.push(`${parks.length} park${parks.length !== 1 ? 's' : ''}`);
+  if (schools.length > 0) highlights.push(`${schools.length} school${schools.length !== 1 ? 's' : ''}`);
   if (attractions.length > 0) highlights.push(`${attractions.length} attraction${attractions.length !== 1 ? 's' : ''}`);
 
   const topIndustry = employers?.sectors?.[0];

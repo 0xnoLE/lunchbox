@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getNearbyPlaces } from '@/lib/places';
+import { getNearbyPlaces, PlaceCategory } from '@/lib/places';
+
+const VALID_CATEGORIES: PlaceCategory[] = ['dining', 'shopping', 'attractions', 'parks', 'schools', 'safety'];
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -14,10 +16,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const validCategories = ['dining', 'shopping', 'attractions', 'parks'];
-  if (!validCategories.includes(category)) {
+  if (!VALID_CATEGORIES.includes(category as PlaceCategory)) {
     return NextResponse.json(
-      { error: `Invalid category. Must be one of: ${validCategories.join(', ')}` },
+      { error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` },
       { status: 400 }
     );
   }
@@ -30,11 +31,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const places = await getNearbyPlaces(
-      latNum,
-      lonNum,
-      category as 'dining' | 'shopping' | 'attractions' | 'parks'
-    );
+    const places = await getNearbyPlaces(latNum, lonNum, category as PlaceCategory);
     return NextResponse.json({ places });
   } catch (error) {
     console.error('Places API error:', error);

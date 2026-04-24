@@ -192,7 +192,7 @@ export default function Home() {
             this tool helps you quickly figure out if an area is worth a closer look.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            {['🌳 Parks & Playgrounds', '🏫 Schools Nearby', '🛡️ Safety Indicators', '🚶 Walkability', '💰 Job Market'].map((item) => (
+            {['🌳 Parks & Playgrounds', '🏫 Schools Nearby', '🍽️ Restaurants & Shops', '🚶 Walkability Score', '💼 Job Market Data'].map((item) => (
               <span key={item} className="rounded-full bg-white border border-green-200 px-4 py-2 text-sm font-medium text-green-800 shadow-sm">
                 {item}
               </span>

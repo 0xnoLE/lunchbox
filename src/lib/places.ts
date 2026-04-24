@@ -9,7 +9,7 @@ export interface Place {
   tags: Record<string, string>;
 }
 
-type PlaceCategory = 'dining' | 'shopping' | 'attractions' | 'parks';
+export type PlaceCategory = 'dining' | 'shopping' | 'attractions' | 'parks' | 'schools' | 'safety';
 
 function buildOverpassQuery(lat: number, lon: number, category: PlaceCategory): string {
   const radius = 2000;
@@ -33,6 +33,14 @@ function buildOverpassQuery(lat: number, lon: number, category: PlaceCategory): 
       way["leisure"~"park|nature_reserve|garden|playground"](around:${radius},${center});
       node["amenity"="park"](around:${radius},${center});
       way["amenity"="park"](around:${radius},${center});
+    `,
+    schools: `
+      node["amenity"~"school|college|university|kindergarten|library"](around:${radius},${center});
+      way["amenity"~"school|college|university|kindergarten|library"](around:${radius},${center});
+    `,
+    safety: `
+      node["amenity"~"police|fire_station|hospital|clinic|pharmacy"](around:${radius},${center});
+      way["amenity"~"police|fire_station|hospital|clinic|pharmacy"](around:${radius},${center});
     `,
   };
 
@@ -61,6 +69,8 @@ function getSubcategory(tags: Record<string, string>, category: PlaceCategory): 
   if (category === 'shopping') return tags.shop || 'shop';
   if (category === 'attractions') return tags.tourism || 'attraction';
   if (category === 'parks') return tags.leisure || tags.amenity || 'park';
+  if (category === 'schools') return tags.amenity || 'school';
+  if (category === 'safety') return tags.amenity || 'safety';
   return category;
 }
 

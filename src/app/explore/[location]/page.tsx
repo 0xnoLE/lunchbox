@@ -4,6 +4,7 @@ import { getNearbyPlaces, Place } from '@/lib/places';
 import { getEmployerData, EmployerData } from '@/lib/employers';
 import SearchBar from '@/components/SearchBar';
 import PlaceCard from '@/components/PlaceCard';
+import SchoolCard from '@/components/SchoolCard';
 import EmployerSection from '@/components/EmployerSection';
 import AreaStats from '@/components/AreaStats';
 import TabView from '@/components/TabView';
@@ -16,6 +17,7 @@ interface PageProps {
 const TABS = [
   { id: 'dining', label: 'Food & Shops', emoji: '🍽️' },
   { id: 'attractions', label: 'Parks & Fun', emoji: '🌳' },
+  { id: 'schools', label: 'Schools', emoji: '🏫' },
   { id: 'employers', label: 'Jobs', emoji: '💼' },
   { id: 'stats', label: 'Our Score', emoji: '📊' },
 ];
@@ -39,6 +41,51 @@ function PlacesGrid({ places, category }: { places: Place[]; category: string })
   );
 }
 
+function SchoolsGrid({ places }: { places: Place[] }) {
+  if (places.length === 0) {
+    return (
+      <div className="text-center py-10 text-gray-500">
+        <div className="text-4xl mb-3">🏫</div>
+        <p className="font-medium">No schools found nearby</p>
+        <p className="text-sm mt-1 text-gray-400">
+          Try searching by a specific ZIP code, or school data may be limited for this area in OpenStreetMap.
+        </p>
+      </div>
+    );
+  }
+  const schools = places.filter((p) => ['school', 'kindergarten', 'college', 'university'].includes(p.subcategory));
+  const libraries = places.filter((p) => p.subcategory === 'library');
+
+  return (
+    <div className="space-y-6">
+      {schools.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <span>🏫</span> Schools &amp; Colleges ({schools.length})
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {schools.map((place) => (
+              <SchoolCard key={place.id} place={place} />
+            ))}
+          </div>
+        </div>
+      )}
+      {libraries.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <span>📚</span> Public Libraries ({libraries.length})
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {libraries.map((place) => (
+              <SchoolCard key={place.id} place={place} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default async function ExplorePage({ params }: PageProps) {
   const { location } = await params;
   const decodedLocation = decodeURIComponent(location);
@@ -55,7 +102,7 @@ export default async function ExplorePage({ params }: PageProps) {
             We searched for <strong>&ldquo;{decodedLocation}&rdquo;</strong> but didn&apos;t get a match.
           </p>
           <p className="text-gray-500 text-sm mb-6">
-            Try being more specific — for example, instead of "Springfield" try "Springfield MO" or enter a ZIP code like "65801".
+            Try being more specific — for example, instead of &ldquo;Springfield&rdquo; try &ldquo;Springfield MO&rdquo; or enter a ZIP code like &ldquo;65801&rdquo;.
           </p>
           <Link
             href="/"
@@ -68,11 +115,13 @@ export default async function ExplorePage({ params }: PageProps) {
     );
   }
 
-  const [dining, shopping, attractions, parks, employerData] = await Promise.allSettled([
+  const [dining, shopping, attractions, parks, schools, safetyPlaces, employerData] = await Promise.allSettled([
     getNearbyPlaces(geoResult.lat, geoResult.lon, 'dining'),
     getNearbyPlaces(geoResult.lat, geoResult.lon, 'shopping'),
     getNearbyPlaces(geoResult.lat, geoResult.lon, 'attractions'),
     getNearbyPlaces(geoResult.lat, geoResult.lon, 'parks'),
+    getNearbyPlaces(geoResult.lat, geoResult.lon, 'schools'),
+    getNearbyPlaces(geoResult.lat, geoResult.lon, 'safety'),
     geoResult.zip ? getEmployerData(geoResult.zip) : Promise.resolve(null),
   ]);
 
@@ -80,6 +129,8 @@ export default async function ExplorePage({ params }: PageProps) {
   const shoppingPlaces: Place[] = shopping.status === 'fulfilled' ? shopping.value : [];
   const attractionPlaces: Place[] = attractions.status === 'fulfilled' ? attractions.value : [];
   const parkPlaces: Place[] = parks.status === 'fulfilled' ? parks.value : [];
+  const schoolPlaces: Place[] = schools.status === 'fulfilled' ? schools.value : [];
+  const safetyInfra: Place[] = safetyPlaces.status === 'fulfilled' ? safetyPlaces.value : [];
   const employers: EmployerData | null = employerData.status === 'fulfilled' ? employerData.value : null;
 
   const locationTitle = [geoResult.city, geoResult.state].filter(Boolean).join(', ') || decodedLocation;
@@ -104,6 +155,11 @@ export default async function ExplorePage({ params }: PageProps) {
             <span className="rounded-full bg-white/20 px-3 py-1 text-sm backdrop-blur-sm">
               📍 {totalPlaces} places found nearby
             </span>
+            {schoolPlaces.length > 0 && (
+              <span className="rounded-full bg-white/20 px-3 py-1 text-sm backdrop-blur-sm">
+                🏫 {schoolPlaces.length} schools
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -115,7 +171,7 @@ export default async function ExplorePage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Summary Card — shown above the tabs */}
+      {/* Summary Card */}
       <div className="mx-auto w-full max-w-5xl px-4 pt-6">
         <NeighborhoodSummary
           city={geoResult.city}
@@ -124,6 +180,7 @@ export default async function ExplorePage({ params }: PageProps) {
           shopping={shoppingPlaces}
           attractions={attractionPlaces}
           parks={parkPlaces}
+          schools={schoolPlaces}
           employers={employers}
         />
       </div>
@@ -167,6 +224,26 @@ export default async function ExplorePage({ params }: PageProps) {
             </div>
           </div>
 
+          {/* Schools */}
+          <div>
+            <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+              <span>🏫</span> Schools &amp; Libraries
+            </h2>
+            <p className="text-sm text-gray-500 mb-4">
+              {schoolPlaces.length} school{schoolPlaces.length !== 1 ? 's' : ''} and librar{schoolPlaces.filter(p => p.subcategory === 'library').length !== 1 ? 'ies' : 'y'} found within about a mile
+            </p>
+            <SchoolsGrid places={schoolPlaces} />
+            <div className="mt-6 rounded-xl bg-blue-50 border border-blue-200 p-4">
+              <p className="text-sm text-blue-700">
+                <strong>Tip:</strong> For school ratings and test scores, visit{' '}
+                <a href="https://www.greatschools.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900">
+                  GreatSchools.org
+                </a>{' '}
+                and search for {locationTitle}.
+              </p>
+            </div>
+          </div>
+
           {/* Jobs */}
           <div>
             <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
@@ -201,6 +278,8 @@ export default async function ExplorePage({ params }: PageProps) {
               shopping={shoppingPlaces}
               attractions={attractionPlaces}
               parks={parkPlaces}
+              schools={schoolPlaces}
+              safety={safetyInfra}
               city={geoResult.city}
               state={geoResult.state}
             />
@@ -227,6 +306,6 @@ export async function generateMetadata({ params }: PageProps) {
   const decodedLocation = decodeURIComponent(location);
   return {
     title: `${decodedLocation} — Neighborhood Report`,
-    description: `Restaurants, parks, shops, and job data for ${decodedLocation}. Is it a good place for your family?`,
+    description: `Schools, restaurants, parks, shops, and job data for ${decodedLocation}. Is it a good place for your family?`,
   };
 }
